@@ -1,0 +1,939 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Chongqing Trip Poll</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Noto+Sans+SC:wght@500;700&display=swap">
+<style>
+/* Layout: a phone-first tour book. Sticky day nav; each day opens with its theme, then walking routes (start and end pins), timed stops and poll cards in the order they happen; feedback and live results close the page. */
+:root {
+  --bg: #0b0f14;
+  --surface: #131922;
+  --surface-2: #1a222d;
+  --line: #28323f;
+  --fg: #eef1f5;
+  --muted: #95a2b4;
+  --chili: #ff5b3d;
+  --chili-ink: #1c0a05;
+  --river: #4fd1c5;
+  --amber: #f2b84b;
+  --jade: #8fd18a;
+  --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --font-cjk: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 400 16px/1.5 var(--font-body); -webkit-font-smoothing: antialiased;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--river); outline-offset: 2px; }
+a { color: var(--river); }
+
+.wrap {
+  max-width: 680px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 120px;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px;
+}
+.wrap > *, #days > * { min-width: 0; }
+.hero h1, .dayhead h2, .sectionhead h2, .walkhead h3, .pollhead h3 { overflow-wrap: break-word; }
+.nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-in {
+  max-width: 680px; margin: 0 auto; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.nav-in::-webkit-scrollbar { display: none; }
+.chip {
+  flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+  border-radius: 999px; padding: 6px 14px; font: 500 13px/1.2 var(--font-mono); letter-spacing: .04em; cursor: pointer;
+}
+.chip:hover { color: var(--fg); border-color: var(--muted); }
+
+/* hero */
+.hero { padding-top: 8px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.hero .cjk { font: 700 15px var(--font-cjk); color: var(--chili); letter-spacing: .3em; }
+.hero h1 { margin: 0; font: 800 clamp(48px, 15vw, 92px)/.88 var(--font-display); text-transform: uppercase; letter-spacing: .01em; text-wrap: balance; }
+.hero p { margin: 0; color: var(--muted); max-width: 48ch; }
+.brief { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px 18px; }
+.brief div { display: grid; gap: 2px; min-width: 0; }
+.brief b { font-weight: 600; overflow-wrap: anywhere; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+.lbl { font: 500 11px/1.2 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.tag { display: inline-block; font: 500 11px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; padding: 5px 8px; border-radius: 6px; border: 1px solid currentColor; }
+.tag.trad { color: var(--amber); }
+.tag.mod { color: var(--river); }
+.tag.mix { color: var(--jade); }
+
+/* name + status */
+.namecard { display: grid; gap: 10px; }
+.namecard input[type=text] { width: 100%; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 16px; }
+.namecard input[type=text]:focus, textarea.ta:focus { border-color: var(--river); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--river) 25%, transparent); }
+.row { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.progress { font: 500 13px var(--font-mono); color: var(--muted); }
+.progress b { color: var(--fg); font-weight: 500; }
+.hint { margin: 0; font-size: 14px; color: var(--amber); }
+.banner { display: grid; gap: 10px; font-size: 14px; color: var(--muted); }
+.banner p { margin: 0; display: flex; gap: 10px; align-items: baseline; }
+.dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transform: translateY(-1px); }
+.banner[data-mode=shared] .dot { background: var(--river); }
+.banner[data-mode=viewonly] .dot, .banner[data-mode=local] .dot { background: var(--amber); }
+.btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 12px; padding: 10px 16px; font-weight: 600; cursor: pointer; justify-self: start; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--chili); color: var(--chili-ink); border-color: var(--chili); }
+#fallback { width: 100%; min-height: 150px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px; font: 500 13px/1.5 var(--font-mono); color: var(--fg); resize: vertical; }
+
+/* sections */
+.sectionhead { margin-top: 36px; scroll-margin-top: 72px; display: grid; gap: 2px; }
+.sectionhead h2, .dayhead h2 { margin: 0; font: 800 clamp(36px, 11vw, 52px)/.95 var(--font-display); text-transform: uppercase; text-wrap: balance; }
+.prep { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 15px; }
+.prep li::marker { color: var(--chili); }
+.prep .cn { font-family: var(--font-cjk); font-weight: 500; }
+
+/* days */
+.day { display: grid; gap: 14px; margin-top: 32px; scroll-margin-top: 72px; }
+.dayhead { display: grid; gap: 4px; }
+.dayhead .daynum { font: 500 12px var(--font-mono); letter-spacing: .16em; color: var(--chili); }
+.dayhead .daysub { margin: 0; color: var(--muted); font-size: 15px; max-width: 52ch; }
+.dayhead .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+
+.timeline { list-style: none; margin: 0 0 0 5px; padding: 0 0 0 22px; border-left: 2px solid var(--line); }
+.timeline li { position: relative; padding-block: 6px 12px; display: grid; gap: 2px; }
+.timeline li::before { content: ""; position: absolute; left: -29px; top: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid var(--muted); }
+.timeline .tm { font: 500 12px var(--font-mono); color: var(--chili); letter-spacing: .06em; }
+.timeline .t { font-weight: 600; }
+.timeline .n { color: var(--muted); font-size: 14px; }
+
+/* walk route card */
+.walk { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 14px; }
+.walkhead { display: grid; gap: 6px; }
+.walkhead .kick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.walkhead .kick .lbl { color: var(--chili); }
+.walkhead h3 { margin: 0; font: 700 28px/1.02 var(--font-display); text-transform: uppercase; text-wrap: balance; }
+.walkhead .meta { font: 500 12px var(--font-mono); color: var(--muted); }
+.route { list-style: none; margin: 0; padding: 0; display: grid; }
+.route li { display: grid; grid-template-columns: 28px 1fr; gap: 0 12px; position: relative; padding-bottom: 14px; }
+.route li:last-child { padding-bottom: 0; }
+.route li::after { content: ""; position: absolute; left: 13px; top: 26px; bottom: 0; border-left: 2px dotted var(--line); }
+.route li:last-child::after { display: none; }
+.pin { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 500 12px var(--font-mono); background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); position: relative; z-index: 1; }
+.route li.start .pin { background: var(--river); color: var(--bg); border-color: var(--river); }
+.route li.end .pin { background: var(--chili); color: var(--chili-ink); border-color: var(--chili); }
+.route .rb { display: grid; gap: 2px; min-width: 0; padding-top: 3px; }
+.route .rk { font: 500 11px var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.route li.start .rk { color: var(--river); }
+.route li.end .rk { color: var(--chili); }
+.route .rt { font-weight: 600; overflow-wrap: anywhere; }
+.route .rt .cn { font: 500 14px var(--font-cjk); color: var(--muted); margin-left: 6px; }
+.route .rn { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.walktip { margin: 0; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+.walktip b { color: var(--amber); font-weight: 600; }
+
+/* polls */
+.poll { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 10px; }
+.pollhead { display: grid; gap: 2px; }
+.pollhead .slot { font: 500 11px var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--chili); }
+.pollhead h3 { margin: 0; font: 700 26px/1.05 var(--font-display); text-transform: uppercase; letter-spacing: .01em; }
+.pollhead .pnote { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.pollhead .voted { font: 500 12px var(--font-mono); color: var(--muted); }
+.opt { position: relative; overflow: hidden; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; padding: 12px 14px; min-height: 56px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); cursor: pointer; }
+.opt > :not(.bar) { position: relative; }
+.opt:has(input:checked) { border-color: var(--chili); background: color-mix(in srgb, var(--chili) 12%, var(--surface-2)); }
+.opt:has(input:disabled) { cursor: not-allowed; }
+.opt:has(input:disabled) input { opacity: .5; }
+.opt .bar { position: absolute; inset: 0 auto 0 0; width: var(--pct, 0%); pointer-events: none; background: color-mix(in srgb, var(--river) 16%, transparent); transition: width .4s ease; }
+.opt input { accent-color: var(--chili); width: 20px; height: 20px; margin: 2px 0 0; }
+.opt .body { display: grid; gap: 3px; min-width: 0; }
+.opt .otitle { font-weight: 600; overflow-wrap: anywhere; }
+.opt .letter { font: 500 13px var(--font-mono); color: var(--chili); margin-right: 8px; }
+.opt .odesc { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.opt .ofacts { color: var(--fg); font-size: 13px; font-family: var(--font-mono); overflow-wrap: anywhere; opacity: .85; }
+.opt .who { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.opt .who:empty { display: none; }
+.opt .cnt { font: 500 15px var(--font-mono); color: var(--muted); min-width: 1.2em; text-align: right; }
+.opt.lead .cnt { color: var(--river); font-weight: 700; }
+.opt.skip { background: transparent; border-style: dashed; min-height: 44px; padding-block: 8px; }
+.opt.skip .otitle { font-weight: 500; color: var(--muted); }
+
+/* links */
+.lks { display: flex; gap: 14px; flex-wrap: wrap; font: 500 12px var(--font-mono); }
+.lks a { color: var(--river); text-decoration: none; padding-block: 4px; border-bottom: 1px solid color-mix(in srgb, var(--river) 40%, transparent); }
+.lks a:hover { border-bottom-color: var(--river); }
+
+/* shopping list */
+.shop { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 12px; }
+.shop h3 { margin: 0; font: 700 26px/1.05 var(--font-display); text-transform: uppercase; }
+.shoplist { list-style: none; margin: 0; padding: 0; display: grid; }
+.shoplist li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding-block: 10px; border-top: 1px solid var(--line); }
+.shoplist li:first-child { border-top: 0; padding-top: 0; }
+.shoplist .it { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.shoplist .it .cn { font: 500 14px var(--font-cjk); color: var(--muted); margin-left: 6px; }
+.shoplist .pr { font: 500 13px var(--font-mono); color: var(--river); font-variant-numeric: tabular-nums; }
+.shoplist .wh { grid-column: 1 / -1; color: var(--muted); font-size: 14px; }
+
+.extras { border: 1px dashed var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; font-size: 14px; }
+.extras p { margin: 0; color: var(--muted); }
+.extras b { font: 500 11px var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--fg); margin-right: 8px; }
+.extras ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.extras li { display: flex; gap: 6px 14px; flex-wrap: wrap; align-items: baseline; justify-content: space-between; }
+.extras li span { min-width: 0; overflow-wrap: anywhere; }
+
+.daynote { display: grid; gap: 6px; }
+textarea.ta { width: 100%; min-height: 64px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 16px; resize: vertical; }
+textarea:disabled, input:disabled { opacity: .5; }
+
+/* stay */
+.stay h3 { margin: 0 0 4px; font: 700 26px/1.05 var(--font-display); text-transform: uppercase; }
+.stay p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+.stay ul { margin: 0 0 12px; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.alts { display: grid; }
+.alt { display: grid; gap: 2px; padding-block: 12px; border-top: 1px solid var(--line); }
+.alt:first-child { border-top: 0; padding-top: 0; }
+.alt a.name { color: var(--fg); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--line); justify-self: start; }
+.alt a.name:hover { border-bottom-color: var(--river); }
+.alt span { color: var(--muted); font-size: 14px; }
+.fine { margin: 0; color: var(--muted); font-size: 12px; }
+
+/* feedback */
+.fb { display: grid; gap: 22px; }
+.fb h3 { margin: 0 0 8px; font-size: 16px; }
+.pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { position: relative; }
+.pill input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.pill span { display: block; padding: 10px 16px; min-width: 48px; text-align: center; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); font-weight: 600; }
+.pill input:checked + span { background: var(--chili); color: var(--chili-ink); border-color: var(--chili); }
+.pill input:focus-visible + span { outline: 2px solid var(--river); outline-offset: 2px; }
+.pill input:disabled + span { opacity: .5; }
+
+/* day illustrations */
+.art { margin: 0; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); }
+.art svg { display: block; width: 100%; height: auto; aspect-ratio: 640 / 260; max-width: 100%; }
+.art figcaption { display: flex; justify-content: space-between; gap: 8px 14px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.art figcaption b { color: var(--fg); font-weight: 600; }
+.art figcaption span { font: 500 11px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.a-sky-top { stop-color: var(--surface-2); }
+.a-sky-warm { stop-color: color-mix(in srgb, var(--chili) 55%, var(--surface-2)); }
+.a-sky-cool { stop-color: color-mix(in srgb, var(--river) 35%, var(--surface-2)); }
+.a-sky-gold { stop-color: color-mix(in srgb, var(--amber) 55%, var(--surface-2)); }
+.a-far { fill: color-mix(in srgb, var(--muted) 28%, var(--bg)); }
+.a-mid { fill: color-mix(in srgb, var(--muted) 14%, var(--bg)); }
+.a-near { fill: var(--bg); }
+.a-body { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
+.a-glow { fill: var(--amber); }
+.a-hot { fill: var(--chili); }
+.a-cool { fill: var(--river); }
+.a-water { fill: color-mix(in srgb, var(--river) 18%, var(--bg)); }
+.a-ln { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.a-lnc { fill: none; stroke: var(--river); stroke-width: 1.5; opacity: .6; }
+.a-steam { fill: none; stroke: var(--fg); stroke-width: 3; stroke-linecap: round; opacity: .22; }
+.a-pool { fill: color-mix(in srgb, var(--river) 45%, var(--bg)); }
+.a-soft { opacity: .5; }
+
+/* results */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.stat { display: grid; gap: 2px; }
+.stat .big { font: 800 56px/1 var(--font-display); color: var(--river); }
+.stat .big small { font-size: 22px; color: var(--muted); font-weight: 700; }
+.stat .sub { color: var(--muted); font-size: 14px; }
+.resrow { display: grid; grid-template-columns: 1fr auto; gap: 2px 14px; padding-block: 12px; border-top: 1px solid var(--line); }
+.resrow:first-child { border-top: 0; padding-top: 0; }
+.resrow .rs { grid-column: 1 / -1; font: 500 11px var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.resrow .rl { font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.resrow .rl.none { color: var(--muted); font-weight: 500; }
+.resrow .rc { font: 500 13px var(--font-mono); color: var(--river); align-self: center; }
+.resrow .rd { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+.voters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.voters li { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 4px 12px; font-size: 14px; }
+.voters li span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-left: 6px; }
+.notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.notes li { font-size: 14px; overflow-wrap: anywhere; }
+.notes li b { color: var(--river); font-weight: 600; }
+.empty { color: var(--muted); font-size: 14px; margin: 0; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 40; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 32px); background: var(--fg); color: var(--bg); border-radius: 999px; padding: 10px 18px; font-weight: 600; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .opt .bar { transition: none; } }
+</style>
+
+<nav class="nav" aria-label="Sections"><div class="nav-in" id="nav"></div></nav>
+
+<main class="wrap">
+  <header class="hero">
+    <div class="cjk">重庆</div>
+    <h1>Chongqing, five days</h1>
+    <p>A bespoke boys' trip for six. Old-city mornings on foot, modern-city nights, two spa days, one souvenir run. Vote on the open slots as you go and score the plan at the bottom.</p>
+  </header>
+
+  <section class="card brief" aria-label="Trip at a glance">
+    <div><span class="lbl">Crew</span><b>6 guys</b></div>
+    <div><span class="lbl">Base</span><b>Huguang Yindi Villa</b></div>
+    <div><span class="lbl">Routes</span><b>5 walks, each start to end</b></div>
+    <div><span class="lbl">Open slots</span><b>6 polls</b></div>
+    <div class="legend" style="grid-column:1/-1"><span class="tag trad">Traditional</span><span class="tag mod">Modern</span><span class="tag mix">Mix</span></div>
+  </section>
+
+  <section class="card namecard" aria-label="Your name">
+    <label class="lbl" for="who">Your name</label>
+    <input type="text" id="who" maxlength="30" autocomplete="nickname" placeholder="Type your name to unlock voting">
+    <p class="hint" id="lockhint">Add your name to unlock the polls.</p>
+    <div class="row"><span class="progress" id="progress"></span><span class="progress" id="savestate"></span></div>
+  </section>
+
+  <section class="card banner" id="banner" data-mode="pending" aria-live="polite">
+    <p><span class="dot"></span><span id="bannertext">Checking whether shared voting is available…</span></p>
+    <button class="btn" type="button" data-copy>Copy my votes</button>
+    <textarea id="fallback" readonly hidden aria-label="Your votes as text"></textarea>
+  </section>
+
+  <section class="sectionhead" id="prep"><div class="lbl">Before we fly</div><h2>Crew briefing</h2></section>
+  <section class="card" aria-label="Before we fly">
+    <ol class="prep">
+      <li>Set up Alipay and switch the city to Chongqing. Turn on the Chongqing Metro transit code to tap through the gates, and use Didi inside Alipay for rides.</li>
+      <li>Use Amap (Gaode) or Baidu Maps, not Google Maps. Station exits open onto very different street levels, so check the exit before you leave the station.</li>
+      <li>Book the Yangtze River Cableway 1 to 2 days ahead on the WeChat mini-program <span class="cn">长江索道</span>.</li>
+      <li>Skip taxis on the Yuzhong peninsula from 17:30 to 19:30. The metro is faster then.</li>
+      <li>Carry passports. Hotels and bathhouses ask for them, and some venues turn away foreign IDs, so check ahead.</li>
+      <li>Tell the villa about late nights. Quiet hours run 22:00 to 09:00.</li>
+    </ol>
+  </section>
+
+  <section class="sectionhead" id="stay"><div class="lbl">Where we sleep</div><h2>The base</h2></section>
+  <section class="card stay" aria-label="Accommodation">
+    <h3>Huguang Yindi Villa Hotel</h3>
+    <p>Inside the Huguang Guild Hall villa area, Yuzhong. 200 m to Huguang Guild Hall, 560 m to Jiefangbei, Xiaoshizi metro 0.68 km.</p>
+    <ul>
+      <li>Whole-villa rooms: 3 bedrooms with 3 queen beds, or a 4-bedroom suite with 4 queen beds.</li>
+      <li>Rated 9.6/10 from 437 reviews on Trip.com.</li>
+      <li>Quiet hours 22:00 to 09:00 and no parties. Ask what is tolerated before booking.</li>
+      <li>Listed price varies from GBP 150 to 288 a night. Confirm for our dates.</li>
+    </ul>
+    <div class="lks">
+      <a href="https://uk.trip.com/hotels/chongqing-hotel-detail-131303200/huguang-yindi-villa-hotel" target="_blank" rel="noopener noreferrer">Trip.com listing</a>
+      <a href="https://uri.amap.com/search?keyword=%E6%B9%96%E5%B9%BF%E4%BC%9A%E9%A6%86&city=500000" target="_blank" rel="noopener noreferrer">Amap</a>
+      <a href="https://www.google.com/search?tbm=isch&q=Huguang%20Yindi%20Villa%20Hotel%20Chongqing" target="_blank" rel="noopener noreferrer">Photos</a>
+    </div>
+  </section>
+  <section class="card" aria-label="Other places to stay">
+    <div class="lbl" style="margin-bottom:12px">Other options</div>
+    <div class="alts">
+      <div class="alt"><a class="name" href="https://ph.trip.com/hotels/chongqing-hotel-detail-39434002/marriott-executive-apartments-chongqing" target="_blank" rel="noopener noreferrer">Marriott Executive Apartments Chongqing</a><span>3-bedroom apartment for six, about 430 m from Jiefangbei. Rated 9.6/10. Bed setup differs between listings.</span></div>
+      <div class="alt"><a class="name" href="https://nz.trip.com/hotels/chongqing-hotel-detail-7954881/jin-xiangyu-serviced-apartment" target="_blank" rel="noopener noreferrer">Jin Xiangyu Serviced Apartment</a><span>Two units cover six. Next to Xiaoshizi metro, from about NZD 69 a night. Rated 9.0/10.</span></div>
+      <div class="alt"><a class="name" href="https://www.discoverasr.com/en/ascott-the-residence/china/ascott-raffles-city-chongqing/apartment" target="_blank" rel="noopener noreferrer">Ascott Raffles City Chongqing</a><span>3-bedroom units sleep six, on the waterfront. Likely the priciest.</span></div>
+      <div class="alt"><a class="name" href="https://au.trip.com/hotels/chongqing-hotel-detail-115178999/somerset-chayuan-chongqing" target="_blank" rel="noopener noreferrer">Somerset Chayuan Chongqing</a><span>Great apartment with a full kitchen, but far south of the old city.</span></div>
+    </div>
+    <p class="fine" style="margin-top:12px">Prices change by date. Amap and Photos links open in a new tab.</p>
+  </section>
+
+  <div id="days"></div>
+
+  <section class="sectionhead" id="feedback"><div class="lbl">After the slots</div><h2>Overall feedback</h2></section>
+  <section class="card fb" aria-label="Overall feedback">
+    <div><h3 id="rl">Rate the plan, 1 to 5</h3><div class="pills" role="radiogroup" aria-labelledby="rl" id="ratingpills"></div></div>
+    <div><h3 id="pl">How is the pace?</h3><div class="pills" role="radiogroup" aria-labelledby="pl" id="pacepills"></div></div>
+    <div><h3><label for="sugg">Suggestions</label></h3><textarea class="ta" id="sugg" rows="3" maxlength="800" placeholder="Swap something, add a place, flag a clash"></textarea></div>
+  </section>
+
+  <section class="sectionhead" id="results"><div class="lbl">Live tally</div><h2>Results so far</h2></section>
+  <section class="card" aria-label="Results summary" aria-live="polite">
+    <div class="stats">
+      <div class="stat"><span class="lbl">Plan rating</span><span class="big" id="avg">–</span><span class="sub" id="avgsub">No ratings yet</span></div>
+      <div class="stat"><span class="lbl">Pace</span><span class="sub" id="pace">No answers yet</span></div>
+    </div>
+  </section>
+  <section class="card" aria-label="Leading options"><div id="reslist"></div></section>
+  <section class="card" aria-label="Who has voted">
+    <div class="lbl" style="margin-bottom:10px">Who has voted</div>
+    <ul class="voters" id="voters"></ul>
+    <p class="empty" id="votersempty">Nobody yet.</p>
+  </section>
+  <section class="card" aria-label="Comments and suggestions">
+    <div class="lbl" style="margin-bottom:10px">Notes and suggestions</div>
+    <ul class="notes" id="notes"></ul>
+    <p class="empty" id="notesempty">No notes yet.</p>
+  </section>
+  <section class="card banner" aria-label="Copy votes">
+    <button class="btn primary" type="button" data-copy>Copy my votes</button>
+    <p style="color:var(--muted)">Pastes as short text into the group chat, so votes can be tallied by hand if shared voting is off.</p>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var MAXV = 6;
+  var SLOTS = ["d1eve", "d2aft", "d2eve", "d3day", "d4eve", "d5mid"];
+  var SLOT_LABEL = {
+    d1eve: "Day 1 evening", d2aft: "Day 2 spa afternoon", d2eve: "Day 2 evening",
+    d3day: "Day 3 all day", d4eve: "Day 4 evening", d5mid: "Day 5 midday"
+  };
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function $(id) { return document.getElementById(id); }
+  // q = English search for photos, cn = Chinese name for Amap (falls back to q)
+  function links(q, cn) {
+    if (!q) return "";
+    var a = encodeURIComponent(cn || q), p = encodeURIComponent(q);
+    return '<span class="lks"><a href="https://uri.amap.com/search?keyword=' + a + '&city=500000" target="_blank" rel="noopener noreferrer">Amap</a>' +
+      '<a href="https://www.google.com/search?tbm=isch&q=' + p + '" target="_blank" rel="noopener noreferrer">Photos</a></span>';
+  }
+  function cnSpan(cn) { return cn ? '<span class="cn" lang="zh">' + esc(cn) + '</span>' : ''; }
+
+  // option = [letter, title, description, facts, short label, photo query, chinese name]
+  var POLLS = {
+    d1eve: { label: "Evening", q: "How do we spend the first night?", opts: [
+      ["A", "River cruise and Nanbin Road beers", "Easy boat ride on the river, then beers on the south bank promenade.", "Modern · Didi across the river", "River cruise + Nanbin beers", "Nanbin Road Chongqing night", "南滨路"],
+      ["B", "Street BBQ near Jiefangbei, then bed", "Grill-and-skewer street food close to the villa. Early night after the flight.", "Traditional · walkable", "Street BBQ, early bed", "Chongqing street BBQ skewers", "解放碑烧烤"]
+    ]},
+    d2aft: { label: "Spa afternoon · 15:00 onward", q: "Which all-access spa?", note: "Entry covers baths or lounges, food and drinks. Add a 90-minute massage on top. Extras go on your wristband and you pay on the way out.", opts: [
+      ["A", "Guanyuan Zu Dao, Jiefangbei", "Massage-led. Private room with ensuite, big TV and a leg milk bath, then a buffet and unlimited drinks. Stay in the room as long as you like.", "~RMB 330–459 pp for 90 min · walk from the villa · book ahead, it's busy", "Guanyuan Zu Dao", "Guanyuan Zu Dao foot massage Chongqing", "观远足道 解放碑"],
+      ["B", "Jinse Hupan HIFI bathhouse, Yuzhong", "Modern bathhouse: rose, herbal and cold-plunge pools, meals and late snacks, PS5 room, cinema, HiFi music rooms. Staff speak basic English.", "~RMB 220 for 8 h · ~10 min walk from Jiaochangkou · one source only, confirm", "Jinse Hupan HIFI", "Chongqing HIFI bathhouse", "金色湖畔 汤泉 渝中"],
+      ["C", "Qianxi Hot Spring, Jiulongpo", "Big 24-hour bathhouse with sauna, steam, salt and jade rooms, a 100-dish buffet, foot therapy, cinema and billiards.", "~RMB 199–250 · 270 m from Chenjiaping Exit 4A · Chinese signage", "Qianxi Hot Spring", "Qianxi hot spring Chongqing", "浅溪汤泉"]
+    ]},
+    d2eve: { label: "Evening", q: "Bars or rooftops?", opts: [
+      ["A", "Bar hop in Guanyinqiao and Jiujie", "The busiest bar streets in the city.", "Modern · Metro Line 3", "Bar hop Guanyinqiao/Jiujie", "Jiujie bar street Chongqing", "九街"],
+      ["B", "Rooftop cocktails", "Flavor Lounge, Suzie's Sky Bar, or Bar 62 at the Niccolo.", "Modern · smart-casual dress code", "Rooftop cocktails", "Niccolo Chongqing Bar 62", "重庆尼依格罗酒店"]
+    ]},
+    d3day: { label: "All day", q: "Recovery or adventure?", opts: [
+      ["A", "Wulong karst day trip", "Natural bridges and gorges. Chartered van from the villa gate, or join a group tour.", "~3 h each way · leave ~07:30, back ~21:00", "Wulong day trip", "Wulong Three Natural Bridges", "武隆天生三桥"],
+      ["B", "Haitang Xiaoyue Hot Spring, Nan'an", "Closest to the old city. 40-plus themed pools and an elevated infinity pool. Reviews flag dated facilities.", "~4 km out · entry ~RMB 128 per one guide · 8.6/10 from 615 reviews", "Haitang Xiaoyue", "Haitang Xiaoyue hot spring Chongqing", "海棠晓月温泉"],
+      ["C", "Ronghui or Tianci hot spring", "Ronghui: 50-plus outdoor pools, real thermal water. Tianci: 100-plus pools, cheapest entry.", "Ronghui ~11 km, day-pass access unconfirmed · Tianci entry ~RMB 69, plan a Didi", "Ronghui/Tianci spa", "Ronghui hot spring Chongqing", "融汇温泉"]
+    ]},
+    d4eve: { label: "Evening", q: "How big is the night?", opts: [
+      ["A", "Big night at PLAY HOUSE", "Club night in Guanyinqiao.", "Modern · Didi home", "PLAY HOUSE club", "PLAY HOUSE club Chongqing", "观音桥 PLAY HOUSE"],
+      ["B", "Live music at MENGTIAN LiveHouse", "Catch a live set.", "Modern · Didi home", "MENGTIAN LiveHouse", "MENGTIAN LiveHouse Chongqing", "梦田 LiveHouse"],
+      ["C", "Quiet night in Jiangbeizui", "Hotel bars and river views across from Chaotianmen.", "Mix · easiest night", "Quiet Jiangbeizui", "Jiangbeizui Chongqing night", "江北嘴"]
+    ]},
+    d5mid: { label: "Midday", q: "Last stop before we fly?", note: "Both cross the river, so set the flight time first and keep this short.", opts: [
+      ["A", "Nanshan One Tree viewpoint", "One last look over the whole peninsula from the south-bank hills.", "Traditional · Didi up the hill", "Nanshan One Tree", "Nanshan One Tree viewpoint Chongqing", "南山一棵树观景台"],
+      ["B", "Quick soak at Haitang Xiaoyue", "A short last soak at the hot spring closest to the old city. Replaces Qinglong Yitang, which reviews poorly.", "Mix · ~4 km out", "Haitang Xiaoyue soak", "Haitang Xiaoyue hot spring Chongqing", "海棠晓月温泉"]
+    ]}
+  };
+
+  // Blocks: time = timeline rows [time, title, note, photoQuery, cn]; walk = route card; poll; shop
+  var DAYS = [
+    { n: 1, title: "Gates to the neon", sub: "Arrive, drop bags, then walk from Qing-era guild halls up to the city's lit-up cliffside.", tags: ["trad", "mod"], blocks: [
+      { t: "time", items: [["14:00", "Check in at Huguang Yindi Villa", "Bags stay free at the front desk if you land early.", "Huguang Yindi Villa Hotel Chongqing", "湖广会馆"]] },
+      { t: "walk", kind: "mix", name: "Old gates to Hongyadong", meta: "16:30 to 19:30 · about 3 h with stops · uphill first, then down", stops: [
+        ["start", "Villa gate", "", "Huguang Guild Hall villa area, Changjiang Binjiang Road.", "", ""],
+        ["", "Huguang Guild Hall", "湖广会馆", "200 m away. Qing-era merchant guild halls and opera stage.", "Huguang Guild Hall Chongqing", "湖广会馆"],
+        ["", "Dongshuimen", "东水门", "Surviving gate of the old city wall, right beside the guild hall.", "Dongshuimen gate Chongqing", "东水门城门"],
+        ["", "Jiefangbei Monument", "解放碑", "Climb up into the shopping heart of the city.", "Jiefangbei Chongqing", "解放碑"],
+        ["", "Kuixing Tower", "魁星楼", "About 15 min on foot. Use the sky corridor.", "Kuixing Tower Chongqing", "魁星楼"],
+        ["", "Daijia Lane cliff walk", "戴家巷崖壁步道", "Walkway along the cliff with cafés and river views.", "Daijia Lane cliff walk Chongqing", "戴家巷崖壁步道"],
+        ["", "Hongyadong, from outside", "洪崖洞", "Watch the lights come on (18:00 to 19:30, by season). Skip the crowded bars inside.", "Hongyadong Chongqing night", "洪崖洞"],
+        ["end", "Qiansimen Bridge", "千厮门大桥", "Pedestrian lane, about 200 m on. The best view back to Hongyadong.", "Qiansimen Bridge Hongyadong view", "千厮门大桥"]
+      ], tip: "Hongyadong is packed from 19:30 to 21:30. The bridge is the better view anyway." },
+      { t: "time", items: [["20:00", "Group hotpot dinner", "Order a half-and-half pot so everyone can eat. One guide suggests Beibu Garden hotpot, hidden in Daijia Lane's old buildings.", "Chongqing hotpot", "戴家巷 火锅"]] },
+      { t: "poll", id: "d1eve" }
+    ], also: [["Chaotianmen Square, where the two rivers meet", "Chaotianmen Square Chongqing", "朝天门广场"], ["Luohan Temple, a quiet stop near Jiefangbei", "Luohan Temple Chongqing", "罗汉寺"]] },
+
+    { n: 2, title: "Ming walls and the spa", sub: "The traditional old city on foot in the morning, across the river by cable car, then an afternoon in a modern all-access spa.", tags: ["trad", "mod"], blocks: [
+      { t: "time", items: [["09:00", "Late noodle breakfast", "Spicy xiaomian is the local default. Eat near the villa.", "Chongqing xiaomian noodles", "小面"]] },
+      { t: "walk", kind: "trad", name: "Ming wall, mountain lanes and the river crossing", meta: "09:45 to 13:30 · about 3.5 h · lots of stone steps", stops: [
+        ["start", "Tongyuanmen", "通远门", "Qixinggang Station (Line 1), Exit 1. A short Didi from the villa.", "Tongyuanmen Chongqing", "通远门"],
+        ["", "Ming city wall path", "", "Follow the surviving wall towards the cliff edge.", "Tongyuanmen city wall Chongqing", "通远门城墙"],
+        ["", "Shancheng Lane", "山城巷", "Stilt houses, old consulates and churches, tea houses on the hillside.", "Shancheng Lane Chongqing", "山城巷"],
+        ["", "Shibati", "十八梯", "Down the stone steps and through the underpass. Great Air-Raid Shelter Ruins at Exit D.", "Shibati Chongqing", "十八梯"],
+        ["", "Yangtze River Cableway", "长江索道", "Xinhua Road station (Xiaoshizi Exit 5 or 5A). Booked ahead. 5 to 10 min across.", "Yangtze River Cableway Chongqing", "长江索道"],
+        ["", "Longmenhao Old Street", "龙门浩老街", "Restored riverside lanes on the south bank.", "Longmenhao Old Street Chongqing", "龙门浩老街"],
+        ["", "Xiahao Lane", "下浩里", "Lunch here. Less touristy: cold noodles and spicy small plates.", "Xiahao Li Chongqing", "下浩里"],
+        ["end", "Dongshuimen Bridge", "东水门大桥", "Take the lift up and walk back across. You land beside the villa.", "Dongshuimen Bridge Chongqing", "东水门大桥"]
+      ], tip: "Shancheng Lane by Didi: tell the driver 佳实养老院 (Jiashi Nursing Home) for the top entrance. \"Shancheng steps\" sends you to the bottom." },
+      { t: "time", items: [["13:30", "Back at the villa", "Shower and rest before the spa."]] },
+      { t: "poll", id: "d2aft" },
+      { t: "poll", id: "d2eve" }
+    ], also: [["Bayi Food Street for suanla fen and bingfen", "Bayi Food Street Chongqing", "八一好吃街"], ["Three Gorges Museum, good if it rains", "Chongqing China Three Gorges Museum", "三峡博物馆"]] },
+
+    { n: 3, title: "Recovery or adventure", sub: "One full day out of the city, picked by vote. Craft beer to close.", tags: ["trad", "mod"], blocks: [
+      { t: "poll", id: "d3day" },
+      { t: "time", items: [["20:30", "Craft beer night", "Mr·Beer in Yubei or a quiet bar. Back at the villa after 22:00 means quiet coming in.", "Mr Beer craft beer Chongqing", "渝北 精酿"]] }
+    ], also: [["Wild Tea Stall on Tushan, the best night view", "Tushan Chongqing night view", "涂山 野茶摊"]] },
+
+    { n: 4, title: "Modern city and the souvenir run", sub: "Downhill from a hilltop park to the train through a building, then an afternoon of shopping from ancient lanes to a 67th-floor sunset.", tags: ["mod", "trad"], blocks: [
+      { t: "walk", kind: "mod", name: "Downhill to the train through the building", meta: "09:30 to 12:00 · about 2.5 h · mostly downhill", stops: [
+        ["start", "Eling Station", "鹅岭站", "Metro Line 1, Exit 1.", "Eling Park Chongqing", "鹅岭站"],
+        ["", "Eling Park and Kansheng Tower", "鹅岭公园 瞰胜楼", "Climb the tower for the 360° view where the Jialing meets the Yangtze.", "Eling Park Kansheng Tower Chongqing", "鹅岭公园"],
+        ["", "Testbed 2", "鹅岭二厂", "Old printing factory turned design district. About 10 min on foot.", "Testbed 2 Eling Chongqing", "鹅岭二厂"],
+        ["", "Stone steps down", "", "From Testbed 2's north exit, about 15 min of steep steps.", "", ""],
+        ["end", "Liziba Station", "李子坝站", "Metro Line 2. Wait at the viewing deck for a train through the building.", "Liziba monorail through building", "李子坝站 观景台"]
+      ], tip: "Do it in this direction. Going up from Liziba is all stairs." },
+      { t: "time", items: [["12:30", "Lunch", "Grab something near Liziba or on the way to Ciqikou."]] },
+      { t: "walk", kind: "mix", name: "Souvenir run: old town to sky deck", meta: "13:30 to 19:30 · shopping afternoon · metro between stops", stops: [
+        ["start", "Ciqikou Station", "磁器口站", "Metro Line 1, Exit 1. Go early to beat the crowds.", "Ciqikou Ancient Town", "磁器口站"],
+        ["", "Ciqikou main street", "磁器口古镇", "Mahua dough twists, tea sets, opera masks, crafts.", "Ciqikou Ancient Town Chongqing", "磁器口古镇"],
+        ["", "Baolun Temple", "宝轮寺", "Up the side alleys, away from the main crowd.", "Baolun Temple Ciqikou", "宝轮寺"],
+        ["", "Raffles City", "重庆来福士", "Metro Line 1 to Xiaoshizi. Modern mall and the sky bridge across the towers.", "Raffles City Chongqing", "重庆来福士"],
+        ["", "Supermarket stop", "", "Stock up on hotpot base and snacks at supermarket prices.", "", ""],
+        ["end", "Eye of the Cloud", "云端之眼", "67th floor, United International Building, near Jiefangbei. Sunset into city lights. Open to 23:00.", "Chongqing Eye of the Cloud observation deck", "云端之眼"]
+      ], tip: "At peak times the open-air decks above the 67th floor limit you to 20 minutes." },
+      { t: "shop" },
+      { t: "poll", id: "d4eve" }
+    ], also: [["Huangjueping Graffiti Street, street art by the fine arts school", "Huangjueping Graffiti Street Chongqing", "黄桷坪涂鸦街"], ["Beicang Creative Zone, Guanyinqiao", "Beicang Creative Zone Chongqing", "北仓文创街区"]] },
+
+    { n: 5, title: "Slow exit", sub: "Brunch, one last view or soak, then home.", tags: ["mix"], blocks: [
+      { t: "time", items: [["10:00", "Slow brunch", "Check out by 12:00. Bags stay free at the villa."]] },
+      { t: "poll", id: "d5mid" },
+      { t: "time", items: [["", "Last snacks at Jiefangbei", "Fill gaps from the souvenir list.", "Jiefangbei Chongqing", "解放碑"], ["", "Collect bags and depart", "Fix the flight time first and work backwards."]] }
+    ], also: [["Nanbin Road riverside walk", "Nanbin Road Chongqing", "南滨路"]] }
+  ];
+
+  var SHOP = [
+    ["Mala hotpot base", "火锅底料", "RMB 30–80", "Supermarkets or spice shops. Check the heat level and seal it well for the flight."],
+    ["Mahua dough twists", "麻花", "RMB 10–25", "Ciqikou snack shops. Skip packs that look oily or stale."],
+    ["Strange-taste broad beans", "怪味胡豆", "RMB 15–30", "Crunchy, spicy-sour bar snack."],
+    ["Jiangjin rice flower candy", "江津米花糖", "RMB 25–40", "Light and crispy, fills spare luggage space."],
+    ["Tea set or tea gift box", "茶具", "RMB 120–180", "Ciqikou markets or tea shops."],
+    ["Silk scarf, Female Heroic Liangyu", "巾帼良玉", "RMB 200–400", "Boutique at Hongyadong. Gift for someone at home."],
+    ["Spicy beef jerky or spiced duck", "牛肉干 · 酱板鸭", "RMB 40–78", "Meat snacks may be restricted at customs back home. Check before you buy."]
+  ];
+
+  var PACE = [["packed", "Too packed"], ["right", "Just right"], ["light", "Too light"]];
+  var PACE_LABEL = { packed: "too packed", right: "just right", light: "too light" };
+
+  /* ---------- original illustrations, one per day ---------- */
+  function svgWrap(label, inner) {
+    return '<svg viewBox="0 0 640 260" preserveAspectRatio="xMidYMid slice" role="img" aria-label="' + esc(label) + '">' + inner + '</svg>';
+  }
+  function sky(id, cls) {
+    return '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="a-sky-top"/><stop offset="1" class="' + cls + '"/></linearGradient></defs><rect width="640" height="260" fill="url(#' + id + ')"/>';
+  }
+  function windows(x, y, w, h, step, cls) {
+    var o = "";
+    for (var yy = y + 8; yy < y + h - 6; yy += step) {
+      for (var xx = x + 8; xx < x + w - 6; xx += step) {
+        if (((xx * 7 + yy * 13) % 5) !== 0) o += '<rect x="' + xx + '" y="' + yy + '" width="4" height="5" class="' + cls + '"/>';
+      }
+    }
+    return o;
+  }
+  var ART = {
+    1: function () {
+      var t = sky("g1", "a-sky-warm") + '<path class="a-far" d="M0 150 L70 118 L150 140 L240 100 L330 135 L420 112 L520 140 L640 120 V260 H0Z"/>';
+      var tiers = [[360, 40, 230, 30], [350, 70, 250, 30], [338, 100, 270, 30], [326, 130, 292, 30], [314, 160, 316, 30]];
+      tiers.forEach(function (r, i) {
+        t += '<rect x="' + r[0] + '" y="' + r[1] + '" width="' + r[2] + '" height="' + r[3] + '" class="a-body"/>' +
+          '<path class="a-hot" d="M' + (r[0] - 6) + ' ' + r[1] + ' H' + (r[0] + r[2] + 6) + ' L' + (r[0] + r[2] - 4) + ' ' + (r[1] - 7) + ' H' + (r[0] + 4) + 'Z"/>' +
+          windows(r[0], r[1], r[2], r[3], 14, "a-glow");
+      });
+      t += '<rect x="0" y="195" width="640" height="65" class="a-water"/>';
+      for (var i = 0; i < 6; i++) t += '<path class="a-lnc" d="M' + (330 + i * 40) + ' ' + (205 + i * 8) + ' h' + (60 - i * 6) + '"/>';
+      t += '<path class="a-ln" d="M0 170 Q160 120 320 170"/><path class="a-ln" d="M40 164 V196 M100 150 V196 M160 143 V196 M220 146 V196 M280 160 V196"/>';
+      t += '<rect x="0" y="190" width="320" height="5" class="a-near"/>';
+      return svgWrap("Illustration: a cliffside of stacked lit tiers over a river at dusk", t);
+    },
+    2: function () {
+      var t = sky("g2", "a-sky-cool") + '<path class="a-far" d="M0 140 L60 110 L130 130 L200 95 L260 125 V260 H0Z"/><path class="a-far" d="M380 125 L450 90 L520 120 L590 98 L640 118 V260 H380Z"/>';
+      t += windows(20, 130, 90, 80, 14, "a-glow").replace(/class="a-glow"/g, 'class="a-glow a-soft"');
+      t += '<rect x="0" y="185" width="640" height="75" class="a-water"/>';
+      for (var i = 0; i < 7; i++) t += '<path class="a-lnc" d="M' + (60 + i * 80) + ' ' + (205 + (i % 3) * 14) + ' h50"/>';
+      t += '<path class="a-ln" d="M30 40 L610 120"/><path class="a-ln" d="M30 52 L610 132"/>';
+      t += '<g transform="translate(300 90)"><path class="a-ln" d="M0 0 V18"/><rect x="-26" y="18" width="52" height="34" rx="6" class="a-hot"/><rect x="-18" y="25" width="10" height="12" class="a-near"/><rect x="-4" y="25" width="10" height="12" class="a-near"/><rect x="10" y="25" width="10" height="12" class="a-near"/></g>';
+      t += '<rect x="20" y="30" width="26" height="18" rx="3" class="a-near"/><rect x="594" y="112" width="26" height="30" rx="3" class="a-near"/>';
+      return svgWrap("Illustration: a cable car crossing a river between two banks of lit buildings", t);
+    },
+    3: function () {
+      var t = sky("g3", "a-sky-gold") + '<path class="a-far" d="M0 170 L80 70 L170 150 L240 55 L330 150 L400 80 L500 160 L580 90 L640 150 V260 H0Z"/>';
+      t += '<path class="a-mid" d="M120 200 L200 105 Q240 70 280 105 L360 200Z"/><path class="a-sky-gold" style="fill:color-mix(in srgb,var(--amber) 35%,var(--surface-2))" d="M215 200 Q240 130 265 200Z"/>';
+      t += '<rect x="0" y="195" width="640" height="65" class="a-near"/>';
+      t += '<ellipse cx="170" cy="225" rx="110" ry="22" class="a-pool"/><ellipse cx="400" cy="232" rx="130" ry="20" class="a-pool"/><ellipse cx="560" cy="222" rx="60" ry="14" class="a-pool"/>';
+      t += '<path class="a-steam" d="M130 215 q-14 -26 0 -50 t0 -50"/><path class="a-steam" d="M175 212 q-14 -26 0 -50 t0 -50"/><path class="a-steam" d="M390 220 q-14 -26 0 -50 t0 -50"/><path class="a-steam" d="M440 218 q-14 -26 0 -50 t0 -50"/><path class="a-steam" d="M560 208 q-12 -22 0 -42 t0 -42"/>';
+      return svgWrap("Illustration: steaming hot spring pools below limestone peaks and a natural arch", t);
+    },
+    4: function () {
+      var t = sky("g4", "a-sky-cool") + '<path class="a-far" d="M0 150 L40 100 L80 150 L130 80 L190 150 L560 150 L600 90 L640 140 V260 H0Z"/>';
+      t += '<rect x="215" y="40" width="210" height="190" class="a-body"/>' + windows(215, 40, 210, 190, 16, "a-glow").replace(/class="a-glow"/g, 'class="a-glow a-soft"');
+      t += '<rect x="215" y="118" width="210" height="34" class="a-near"/>';
+      t += '<rect x="170" y="124" width="300" height="20" rx="8" class="a-cool"/>';
+      for (var i = 0; i < 8; i++) t += '<rect x="' + (182 + i * 36) + '" y="129" width="22" height="8" rx="2" class="a-near"/>';
+      t += '<path class="a-ln" d="M0 150 H640" /><rect x="0" y="230" width="640" height="30" class="a-near"/>';
+      t += '<path class="a-ln" d="M470 190 l18 -14 l18 14 l18 -14 l18 14 l18 -14 l18 14 l18 -14"/>';
+      return svgWrap("Illustration: a tower block with a light-rail train passing through its middle floors", t);
+    },
+    5: function () {
+      var t = sky("g5", "a-sky-warm") + '<path class="a-far" d="M0 170 L80 150 L140 168 L210 140 L290 165 L380 135 L470 160 L560 130 L640 150 V260 H0Z"/>';
+      t += windows(250, 150, 390, 40, 12, "a-glow").replace(/class="a-glow"/g, 'class="a-glow a-soft"');
+      t += '<path class="a-near" d="M0 210 Q150 170 320 205 T640 195 V260 H0Z"/>';
+      t += '<path class="a-near" d="M120 205 V120"/><path style="fill:none;stroke:var(--bg);stroke-width:10;stroke-linecap:round" d="M120 205 V120"/>';
+      t += '<ellipse cx="120" cy="100" rx="52" ry="36" class="a-near"/><ellipse cx="88" cy="118" rx="30" ry="22" class="a-near"/><ellipse cx="152" cy="116" rx="30" ry="22" class="a-near"/>';
+      t += '<path class="a-ln" style="stroke:var(--fg);opacity:.5" d="M260 205 H430 M270 205 V185 M300 205 V185 M330 205 V185 M360 205 V185 M390 205 V185 M420 205 V185 M260 185 H430"/>';
+      t += '<path style="fill:none;stroke:var(--fg);stroke-width:2;opacity:.6;stroke-linecap:round" d="M470 60 q8 -8 16 0 q8 -8 16 0 M520 78 q6 -6 12 0 q6 -6 12 0"/>';
+      return svgWrap("Illustration: a lone tree and a railing on a hilltop looking over a lit city at dusk", t);
+    }
+  };
+  var ART_CAP = {
+    1: ["Hongyadong at dusk", "Stacked riverside tiers lighting up"],
+    2: ["Yangtze River Cableway", "Across the water, eye level with the roofs"],
+    3: ["Hot spring day", "Steam over the pools, or Wulong's karst if you pick the trip"],
+    4: ["Liziba light rail", "The train that runs through a building"],
+    5: ["Nanshan One Tree", "The whole peninsula, lit, before you fly"]
+  };
+  function artHTML(n) {
+    return '<figure class="art">' + ART[n]() + '<figcaption><b>' + esc(ART_CAP[n][0]) + '</b><span>Illustration, not a photo</span></figcaption></figure>';
+  }
+
+  var KIND = { trad: "Traditional", mod: "Modern", mix: "Mix" };
+
+  /* ---------- build the static page ---------- */
+  function pollHTML(id) {
+    var p = POLLS[id];
+    var h = '<div class="poll" role="radiogroup" aria-labelledby="q-' + id + '" data-slot="' + id + '">' +
+      '<div class="pollhead"><span class="slot">Vote · ' + esc(p.label) + '</span><h3 id="q-' + id + '">' + esc(p.q) + '</h3>' +
+      (p.note ? '<p class="pnote">' + esc(p.note) + '</p>' : '') +
+      '<span class="voted" data-voted="' + id + '"></span></div>';
+    p.opts.forEach(function (o) {
+      h += '<label class="opt" data-opt="' + id + ':' + o[0] + '"><span class="bar"></span>' +
+        '<input type="radio" name="s-' + id + '" value="' + o[0] + '" disabled>' +
+        '<span class="body"><span class="otitle"><b class="letter">' + o[0] + '</b>' + esc(o[1]) + '</span>' +
+        '<span class="odesc">' + esc(o[2]) + '</span>' +
+        (o[3] ? '<span class="ofacts">' + esc(o[3]) + '</span>' : '') +
+        links(o[5], o[6]) + '<span class="who"></span></span>' +
+        '<span class="cnt">0</span></label>';
+    });
+    h += '<label class="opt skip" data-opt="' + id + ':skip"><span class="bar"></span>' +
+      '<input type="radio" name="s-' + id + '" value="skip" disabled>' +
+      '<span class="body"><span class="otitle">Not for me / skip</span><span class="who"></span></span>' +
+      '<span class="cnt">0</span></label></div>';
+    return h;
+  }
+  function timeHTML(b) {
+    return '<ol class="timeline">' + b.items.map(function (f) {
+      return '<li>' + (f[0] ? '<span class="tm">' + esc(f[0]) + '</span>' : '') + '<span class="t">' + esc(f[1]) + '</span>' +
+        (f[2] ? '<span class="n">' + esc(f[2]) + '</span>' : '') + links(f[3], f[4]) + '</li>';
+    }).join('') + '</ol>';
+  }
+  function walkHTML(b, num) {
+    var mid = 0;
+    var h = '<article class="walk"><header class="walkhead"><div class="kick"><span class="lbl">Walk ' + num + '</span><span class="tag ' + b.kind + '">' + KIND[b.kind] + '</span></div>' +
+      '<h3>' + esc(b.name) + '</h3><span class="meta">' + esc(b.meta) + '</span></header><ol class="route">';
+    b.stops.forEach(function (s) {
+      var role = s[0], pin, key;
+      if (role === "start") { pin = "A"; key = "Start"; }
+      else if (role === "end") { pin = "B"; key = "End"; }
+      else { mid++; pin = String(mid); key = ""; }
+      h += '<li class="' + role + '"><span class="pin" aria-hidden="true">' + pin + '</span><span class="rb">' +
+        (key ? '<span class="rk">' + key + '</span>' : '') +
+        '<span class="rt">' + esc(s[1]) + cnSpan(s[2]) + '</span>' +
+        (s[3] ? '<span class="rn">' + esc(s[3]) + '</span>' : '') + links(s[4], s[5]) + '</span></li>';
+    });
+    h += '</ol>' + (b.tip ? '<p class="walktip"><b>Tip</b> ' + esc(b.tip) + '</p>' : '') + '</article>';
+    return h;
+  }
+  function shopHTML() {
+    return '<section class="shop" aria-label="Souvenir list"><span class="lbl">Shopping list</span><h3>What to bring home</h3><ul class="shoplist">' +
+      SHOP.map(function (s) {
+        return '<li><span class="it">' + esc(s[0]) + cnSpan(s[1]) + '</span><span class="pr">' + esc(s[2]) + '</span><span class="wh">' + esc(s[3]) + '</span></li>';
+      }).join('') + '</ul><p class="fine">Prices are typical ranges from a Trip.com guide.</p></section>';
+  }
+
+  var daysEl = $("days"), nav = $("nav"), walkNo = 0;
+  addNav("Brief", "prep"); addNav("Stay", "stay");
+  DAYS.forEach(function (d) {
+    var sec = document.createElement("section");
+    sec.className = "day"; sec.id = "day" + d.n;
+    var h = '<header class="dayhead"><div class="daynum">DAY ' + d.n + '</div><h2>' + esc(d.title) + '</h2><p class="daysub">' + esc(d.sub) + '</p>' +
+      '<div class="tags">' + d.tags.map(function (t) { return '<span class="tag ' + t + '">' + KIND[t] + '</span>'; }).join('') + '</div></header>';
+    h += artHTML(d.n);
+    d.blocks.forEach(function (b) {
+      if (b.t === "time") h += timeHTML(b);
+      else if (b.t === "walk") h += walkHTML(b, ++walkNo);
+      else if (b.t === "poll") h += pollHTML(b.id);
+      else if (b.t === "shop") h += shopHTML();
+    });
+    if (d.also && d.also.length) {
+      h += '<div class="extras"><p><b>Also consider</b></p><ul>' + d.also.map(function (a) { return '<li><span>' + esc(a[0]) + '</span>' + links(a[1], a[2]) + '</li>'; }).join('') + '</ul></div>';
+    }
+    h += '<div class="daynote"><label class="lbl" for="note-' + d.n + '">Day ' + d.n + ' notes (optional)</label>' +
+      '<textarea class="ta" id="note-' + d.n + '" data-day="' + d.n + '" rows="2" maxlength="400" placeholder="Anything to add for this day?" disabled></textarea></div>';
+    sec.innerHTML = h;
+    daysEl.appendChild(sec);
+    addNav("Day " + d.n, "day" + d.n);
+  });
+  addNav("Feedback", "feedback"); addNav("Results", "results");
+  function addNav(label, target) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = label;
+    b.addEventListener("click", function () { var el = $(target); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); });
+    nav.appendChild(b);
+  }
+
+  var rp = $("ratingpills");
+  [1, 2, 3, 4, 5].forEach(function (n) { rp.insertAdjacentHTML("beforeend", '<label class="pill"><input type="radio" name="rating" value="' + n + '" disabled><span>' + n + '</span></label>'); });
+  var pp = $("pacepills");
+  PACE.forEach(function (p) { pp.insertAdjacentHTML("beforeend", '<label class="pill"><input type="radio" name="pace" value="' + p[0] + '" disabled><span>' + p[1] + '</span></label>'); });
+  $("sugg").disabled = true;
+
+  /* ---------- state ---------- */
+  var me = blank(), docs = {}, uid = null, dbRef = null, mode = "pending", touched = false, hydrated = false;
+  var SUPABASE_URL = "https://usyvsuabxccapkahoxau.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_RevyzZb_Tc13mNLYfwibdw_CHGSCqNd";
+  var channel = null, refreshTimer = null;
+  function blank() { return { name: "", choices: {}, comments: {}, rating: 0, pace: "", suggestions: "" }; }
+  function normalize(d) {
+    var m = blank(); d = d || {};
+    m.name = typeof d.name === "string" ? d.name : "";
+    m.choices = d.choices && typeof d.choices === "object" ? Object.assign({}, d.choices) : {};
+    m.comments = d.comments && typeof d.comments === "object" ? Object.assign({}, d.comments) : {};
+    m.rating = Number(d.rating) || 0;
+    m.pace = typeof d.pace === "string" ? d.pace : "";
+    m.suggestions = typeof d.suggestions === "string" ? d.suggestions : "";
+    return m;
+  }
+  function hasData(m) {
+    return !!(m.name.trim() || Object.keys(m.choices).length || m.rating || m.pace || m.suggestions.trim() ||
+      Object.keys(m.comments).some(function (k) { return String(m.comments[k]).trim(); }));
+  }
+  var LS = "cq-trip-me";
+  function loadLocal() { try { var s = localStorage.getItem(LS); if (s) me = normalize(JSON.parse(s)); } catch (e) {} }
+  function persistLocal() { try { localStorage.setItem(LS, JSON.stringify(me)); } catch (e) {} }
+
+  function nameOK() { return me.name.trim().length >= 2; }
+  function setLocked() {
+    var ok = nameOK();
+    document.querySelectorAll("#days input, #days textarea, .fb input, .fb textarea").forEach(function (el) { el.disabled = !ok; });
+    $("lockhint").hidden = ok;
+  }
+  function applyMe() {
+    $("who").value = me.name;
+    document.querySelectorAll('#days input[type=radio]').forEach(function (r) { r.checked = me.choices[r.name.slice(2)] === r.value; });
+    document.querySelectorAll("#days textarea[data-day]").forEach(function (t) { t.value = me.comments[t.dataset.day] || ""; });
+    document.querySelectorAll('input[name=rating]').forEach(function (r) { r.checked = Number(r.value) === me.rating; });
+    document.querySelectorAll('input[name=pace]').forEach(function (r) { r.checked = r.value === me.pace; });
+    $("sugg").value = me.suggestions;
+    setLocked();
+  }
+
+  /* ---------- tallies and results ---------- */
+  function voterList() {
+    var list = [];
+    Object.keys(docs).forEach(function (k) { if (k !== uid) list.push(normalize(docs[k])); });
+    if (hasData(me)) list.push(me);
+    return list;
+  }
+  function vname(v) { return v.name.trim() || "Someone"; }
+  function leaders(slot, vs) {
+    var counts = {}, best = 0;
+    POLLS[slot].opts.forEach(function (o) { counts[o[0]] = 0; });
+    vs.forEach(function (v) { var c = v.choices[slot]; if (c && counts[c] !== undefined) counts[c]++; });
+    Object.keys(counts).forEach(function (k) { if (counts[k] > best) best = counts[k]; });
+    return { counts: counts, best: best, top: best ? Object.keys(counts).filter(function (k) { return counts[k] === best; }) : [] };
+  }
+  function updateAll() {
+    var vs = voterList();
+    SLOTS.forEach(function (slot) {
+      var L = leaders(slot, vs);
+      var answered = vs.filter(function (v) { return v.choices[slot]; });
+      POLLS[slot].opts.map(function (o) { return o[0]; }).concat(["skip"]).forEach(function (k) {
+        var el = document.querySelector('[data-opt="' + slot + ':' + k + '"]');
+        if (!el) return;
+        var who = answered.filter(function (v) { return v.choices[slot] === k; });
+        el.style.setProperty("--pct", (answered.length ? who.length / answered.length * 100 : 0) + "%");
+        el.querySelector(".cnt").textContent = who.length;
+        el.querySelector(".who").textContent = who.map(vname).join(", ");
+        el.classList.toggle("lead", k !== "skip" && L.top.indexOf(k) > -1);
+      });
+      var vt = document.querySelector('[data-voted="' + slot + '"]');
+      if (vt) vt.textContent = answered.length + " of " + MAXV + " voted";
+    });
+    var n = SLOTS.filter(function (s) { return me.choices[s]; }).length;
+    $("progress").innerHTML = "<b>" + n + "</b> of " + SLOTS.length + " slots answered";
+    var rl = $("reslist"); rl.textContent = "";
+    SLOTS.forEach(function (slot) {
+      var L = leaders(slot, vs);
+      var skips = vs.filter(function (v) { return v.choices[slot] === "skip"; }).length;
+      var total = vs.filter(function (v) { return v.choices[slot]; }).length;
+      var row = document.createElement("div"); row.className = "resrow";
+      var s = document.createElement("div"); s.className = "rs"; s.textContent = SLOT_LABEL[slot];
+      var l = document.createElement("div"); l.className = "rl";
+      var c = document.createElement("div"); c.className = "rc";
+      if (!L.best) { l.textContent = total ? "Only skips so far" : "No votes yet"; l.classList.add("none"); }
+      else if (L.top.length === 1) { var o = POLLS[slot].opts.filter(function (x) { return x[0] === L.top[0]; })[0]; l.textContent = o[0] + " · " + o[1]; }
+      else { l.textContent = "Tie: " + L.top.join(" and "); }
+      c.textContent = L.best ? L.best + " of " + total : "";
+      row.appendChild(s); row.appendChild(l); row.appendChild(c);
+      if (skips) { var d = document.createElement("div"); d.className = "rd"; d.textContent = skips + " skipping this one"; row.appendChild(d); }
+      rl.appendChild(row);
+    });
+    var rated = vs.filter(function (v) { return v.rating > 0; });
+    if (rated.length) {
+      var avg = rated.reduce(function (a, v) { return a + v.rating; }, 0) / rated.length;
+      $("avg").innerHTML = avg.toFixed(1) + " <small>/ 5</small>";
+      $("avgsub").textContent = "From " + rated.length + (rated.length === 1 ? " vote" : " votes");
+    } else { $("avg").textContent = "–"; $("avgsub").textContent = "No ratings yet"; }
+    var pc = { packed: 0, right: 0, light: 0 }, pn = 0;
+    vs.forEach(function (v) { if (pc[v.pace] !== undefined) { pc[v.pace]++; pn++; } });
+    $("pace").textContent = pn ? PACE.map(function (p) { return PACE_LABEL[p[0]] + " " + pc[p[0]]; }).join(" · ") : "No answers yet";
+    var ul = $("voters"); ul.textContent = "";
+    var named = vs.filter(function (v) { return Object.keys(v.choices).length; });
+    named.forEach(function (v) {
+      var li = document.createElement("li"); li.textContent = vname(v);
+      var sp = document.createElement("span"); sp.textContent = Object.keys(v.choices).filter(function (k) { return SLOTS.indexOf(k) > -1; }).length + "/" + SLOTS.length;
+      li.appendChild(sp); ul.appendChild(li);
+    });
+    $("votersempty").hidden = named.length > 0;
+    var nl = $("notes"); nl.textContent = ""; var count = 0;
+    vs.forEach(function (v) {
+      Object.keys(v.comments).sort().forEach(function (k) { var t = String(v.comments[k]).trim(); if (!t) return; addNote(nl, vname(v) + " on day " + k, t); count++; });
+      if (v.suggestions.trim()) { addNote(nl, vname(v) + " suggests", v.suggestions.trim()); count++; }
+    });
+    $("notesempty").hidden = count > 0;
+  }
+  function addNote(list, who, text) {
+    var li = document.createElement("li"); var b = document.createElement("b"); b.textContent = who + ": ";
+    li.appendChild(b); li.appendChild(document.createTextNode(text)); list.appendChild(li);
+  }
+
+  /* ---------- banner ---------- */
+  var BANNER = {
+    pending: "Connecting to Supabase. Your votes stay on this device until connected.",
+    shared: "Shared voting is on. Your votes save to the group as you tap, and everyone's tallies update live.",
+    viewonly: "You can see everyone's votes, but this link does not let you save yours to the group. Tap Copy my votes and paste the text into the group chat.",
+    local: "Shared voting is not connected. Check your Supabase setup; meanwhile votes stay on this device. Use Copy my votes as a backup."
+  };
+  function renderBanner() { $("banner").dataset.mode = mode; $("bannertext").textContent = BANNER[mode]; setSave(mode === "shared" ? "" : "Kept on this device"); }
+  function setSave(t) { $("savestate").textContent = t; }
+
+  /* ---------- Supabase saving and shared results ---------- */
+  var timer = null, saving = false, again = false;
+  function canSave() { return mode === "shared" && dbRef && uid && nameOK(); }
+  function touch() {
+    touched = true; persistLocal(); updateAll();
+    if (canSave()) { clearTimeout(timer); timer = setTimeout(function () { flush(false); }, 700); }
+  }
+  async function flush(retried) {
+    if (!canSave()) return;
+    if (saving) { again = true; return; }
+    saving = true; setSave("Saving…");
+    try {
+      var payload = { name: me.name.trim(), choices: me.choices, comments: me.comments,
+        rating: me.rating, pace: me.pace, suggestions: me.suggestions };
+      var response = await dbRef.from("trip_responses").upsert(
+        { user_id: uid, response: payload, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
+      if (response.error) throw response.error;
+      docs[uid] = payload;
+      setSave("Saved to the group");
+      updateAll();
+    } catch (e) {
+      console.error("Could not save vote", e);
+      setSave("Not saved. Use Copy my votes.");
+    } finally {
+      saving = false;
+      if (again) { again = false; flush(false); }
+    }
+  }
+  async function refreshVotes() {
+    if (!dbRef || !uid) return;
+    try {
+      var response = await dbRef.from("trip_responses").select("user_id,response");
+      if (response.error) throw response.error;
+      docs = {};
+      (response.data || []).forEach(function (r) { docs[r.user_id] = r.response; });
+      if (!hydrated) {
+        hydrated = true;
+        if (docs[uid] && !touched && !hasData(me)) {
+          me = normalize(docs[uid]); persistLocal(); applyMe();
+        } else if (hasData(me)) { flush(false); }
+      }
+      updateAll();
+    } catch (e) {
+      console.error("Could not read shared results", e);
+      setSave("Unable to refresh results");
+    }
+  }
+  function queueRefresh() {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(refreshVotes, 250);
+  }
+
+  /* ---------- events ---------- */
+  $("who").addEventListener("input", function (e) { me.name = e.target.value; setLocked(); touch(); });
+  daysEl.addEventListener("change", function (e) { var t = e.target; if (t.matches("input[type=radio]")) { me.choices[t.name.slice(2)] = t.value; touch(); } });
+  daysEl.addEventListener("input", function (e) { var t = e.target; if (t.matches("textarea[data-day]")) { me.comments[t.dataset.day] = t.value; touch(); } });
+  document.querySelector(".fb").addEventListener("change", function (e) {
+    var t = e.target;
+    if (t.name === "rating") { me.rating = Number(t.value); touch(); }
+    if (t.name === "pace") { me.pace = t.value; touch(); }
+  });
+  $("sugg").addEventListener("input", function (e) { me.suggestions = e.target.value; touch(); });
+
+  /* ---------- copy my votes ---------- */
+  function summary() {
+    var L = ["Chongqing trip votes: " + (me.name.trim() || "(no name)")];
+    SLOTS.forEach(function (slot) {
+      var c = me.choices[slot], t = "no vote";
+      if (c === "skip") t = "skip";
+      else if (c) { var o = POLLS[slot].opts.filter(function (x) { return x[0] === c; })[0]; if (o) t = c + " (" + o[4] + ")"; }
+      L.push(SLOT_LABEL[slot] + ": " + t);
+    });
+    Object.keys(me.comments).sort().forEach(function (k) { var t = String(me.comments[k]).trim(); if (t) L.push("Day " + k + " note: " + t); });
+    L.push("Plan rating: " + (me.rating ? me.rating + "/5" : "not rated"));
+    L.push("Pace: " + (PACE_LABEL[me.pace] || "no answer"));
+    if (me.suggestions.trim()) L.push("Suggestions: " + me.suggestions.trim());
+    return L.join("\n");
+  }
+  var toastT = null;
+  function toast(t) { var el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { el.hidden = true; }, 2200); }
+  function copyVotes() {
+    var text = summary(), fb = $("fallback"); fb.value = text;
+    function fallback() { fb.hidden = false; fb.focus(); fb.select(); toast("Select and copy the text"); }
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(function () { toast("Copied. Paste it in the chat."); }, fallback); }
+    else { fallback(); }
+  }
+  document.querySelectorAll("[data-copy]").forEach(function (b) { b.addEventListener("click", copyVotes); });
+
+  /* ---------- start ---------- */
+  loadLocal(); applyMe(); updateAll(); renderBanner();
+  async function init() {
+    if (!window.supabase || !window.supabase.createClient) {
+      mode = "local"; renderBanner(); setSave("Supabase library did not load"); return;
+    }
+    try {
+      dbRef = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      var sessionResult = await dbRef.auth.getSession();
+      if (sessionResult.error) throw sessionResult.error;
+      var session = sessionResult.data.session;
+      if (!session) {
+        var signIn = await dbRef.auth.signInAnonymously();
+        if (signIn.error) throw signIn.error;
+        session = signIn.data.session;
+      }
+      uid = session && session.user && session.user.id;
+      if (!uid) throw new Error("No session identity");
+      mode = "shared"; renderBanner();
+      await refreshVotes();
+      channel = dbRef.channel("cq-trip-live-results")
+        .on("postgres_changes", { event: "*", schema: "public", table: "trip_responses" }, queueRefresh)
+        .subscribe(function (status) {
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            setSave("Live updates disconnected; refresh page for results");
+          }
+        });
+      document.addEventListener("visibilitychange", function () { if (!document.hidden) queueRefresh(); });
+      window.addEventListener("online", queueRefresh);
+    } catch (e) {
+      console.error("Supabase setup failed", e);
+      mode = "local"; renderBanner();
+      setSave("Setup needed: enable anonymous sign-ins and run the SQL script");
+    }
+  }
+  init();
+})();
+</script>
+
+</body></html>
